@@ -1,6 +1,6 @@
 module ThesisUtils
 
-import Plots: pyplot, plot, annotate!, font, with, png, svg
+import Plots: pyplot, default, plot, annotate!, font, with, png, svg
 
 export Margin, Normal, Full
 export autofig, placeholder
@@ -64,8 +64,8 @@ const caption_font_opts = Dict(
 const plotopts = Dict(
   :linewidth => 1.5,
   :grid => false,
-  :dpi => dpi_scale)
-pyplot(;plotopts..., main_font_opts...)
+  :dpi => dpi_scale )
+pyplot(;plotopts...)
 
 # Folder to save generated figures to
 const figdir = "autofigs"
@@ -85,13 +85,13 @@ function autofig(plotfunc, name, s::PlotSize; vscale=1, savepng=false)
   width = figsize[s][1]
   height = figsize[s][2] * vscale
   if s == Margin
-    font_opts = caption_font_opts
+    default(;caption_font_opts...)
   else
-    font_opts = main_font_opts
+    default(;main_font_opts...)
   end
 
   # plot the figure and save it to file
-  with(size=(width,height), font_opts...) do
+  with(size=(width,height)) do
     p = plotfunc()
     figpath = joinpath(figdir, name)
     if savepng
