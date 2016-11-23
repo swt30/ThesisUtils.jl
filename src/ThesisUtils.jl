@@ -1,9 +1,12 @@
 module ThesisUtils
 
-import Plots: pyplot, default, plot, annotate!, font, with, png, svg
+import Plots
+import PlotUtils
+import ColorTypes
 
 export Margin, Normal, Full
-export autofig, placeholder
+export autofig, placeholder, annotate_color!, seqcolors,
+       remove_ticklabels!
 
 ## Page layout settings
 # To describe the extent of a figure we define these terms
@@ -47,25 +50,29 @@ end
 
 ## Plot display options
 # Font settings
-const main_font = font("fbb", 10)
-const caption_font = font("fbb", 8)
+const fontstyle = "fbb"
+const fontsize = Dict(
+  Margin => 8,
+  Normal => 10,
+  Full => 10 )
+const font = Dict((s, Plots.font(fontstyle, fontsize[s])) for s in plotsizes)
 const main_font_opts = Dict(
-  :tickfont => main_font,
-  :legendfont => main_font,
-  :guidefont => main_font,
-  :titlefont => main_font )
+  :tickfont => font[Normal],
+  :legendfont => font[Normal],
+  :guidefont => font[Normal],
+  :titlefont => font[Normal] )
 const caption_font_opts = Dict(
-  :tickfont => caption_font,
-  :legendfont => caption_font,
-  :guidefont => caption_font,
-  :titlefont => caption_font )
+  :tickfont => font[Margin],
+  :legendfont => font[Margin],
+  :guidefont => font[Margin],
+  :titlefont => font[Margin] )
 
 # Plot appearance
 const plotopts = Dict(
   :linewidth => 1.5,
   :grid => false,
   :dpi => dpi_scale )
-pyplot(;plotopts...)
+Plots.pyplot(;plotopts...)
 
 # Folder to save generated figures to
 const figdir = "autofigs"
@@ -85,19 +92,22 @@ function autofig(plotfunc, name, s::PlotSize; vscale=1, savepng=false)
   width = figsize[s][1]
   height = figsize[s][2] * vscale
   if s == Margin
-    default(;caption_font_opts...)
+    Plots.default(;caption_font_opts...)
   else
-    default(;main_font_opts...)
+    Plots.default(;main_font_opts...)
+  end
+  if s == Full
+    name *= "_big_fig"
   end
 
   # plot the figure and save it to file
-  with(size=(width,height)) do
+  Plots.with(size=(width,height)) do
     p = plotfunc()
     figpath = joinpath(figdir, name)
     if savepng
-      png(figpath)
+      Plots.png(figpath)
     else
-      svg(figpath)
+      Plots.svg(figpath)
       # bit of a workaround because the font doesn't embed
       run(`rsvg-convert -f pdf -o $figpath.pdf $figpath.svg`)
       rm("$figpath.svg")
@@ -108,10 +118,43 @@ end
 
 "Make a default plot"
 function placeholder()
-  plot([sin, cos], linspace(0, 2π), labels=["sin(x)" "cos(x)"],
+  Plots.plot([sin, cos], linspace(0, 2π), labels=["sin(x)" "cos(x)"],
     xlabel="This is the x-axis",
     ylabel="This is the y-axis",
     title="Placeholder plot")
+end
+
+typealias PlotType Union{Plots.Plot, Plots.Subplot}
+
+"Annotate a plot with a colored label"
+function annotate_color!(x, y, text, color;
+                         position=:left, plotsize=Normal, rotation=0)
+  basefont = font[plotsize]
+  rot = deg2rad(rotation)
+  formatted_font = Plots.font(basefont, color, position, rot)
+  formatted_text = Plots.text(text, formatted_font)
+  Plots.annotate!(x, y, formatted_text)
+end
+function annotate_color!(p::PlotType, x, y, text, color;
+                         position=:left, plotsize=Normal, rotation=0)
+  basefont = font[plotsize]
+  rot = deg2rad(rotation)
+  formatted_font = Plots.font(basefont, color, position, rot)
+  formatted_text = Plots.text(text, formatted_font)
+  Plots.annotate!(p, x, y, formatted_text)
+end
+
+"Remove the tick labels from a plot but leave the ticks and grid"
+function remove_ticklabels!(p::PlotType; x=true, y=true)
+  x && Plots.plot!(p; xformatter=_->"")
+  y && Plots.plot!(p; yformatter=_->"")
+  p
+end
+
+"Provide a palette of colors drawn sequentially from a color gradient"
+function seqcolors(name, N, start=0, stop=1)
+  grad = PlotUtils.cgrad(name)
+  colors = ColorTypes.RGBA{Float64}[grad[n] for n in linspace(start, stop, N)]
 end
 
 end # module ThesisUtils
