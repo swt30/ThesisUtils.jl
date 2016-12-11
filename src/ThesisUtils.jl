@@ -3,6 +3,8 @@ module ThesisUtils
 import Plots
 import PlotUtils
 import ColorTypes
+import PyCall
+  PyCall.@pyimport gc as pygc
 
 export Margin, Normal, Full
 export autofig, placeholder, annotate_color!, seqcolors,
@@ -77,7 +79,7 @@ Plots.pyplot(;plotopts...)
 # Folder to save generated figures to
 const figdir = "autofigs"
 
-""" Make a plot to go in the thesis and save it as a pdf
+""" Make a plot to go in the thesis and save it
 
     plotfunc: The plotting function; should return a Plot object
     name: The file name to save the figure as
@@ -88,6 +90,9 @@ const figdir = "autofigs"
                                   vertical space
     png [optional, default=1]: Save the plot as a png instead of a pdf """
 function autofig(plotfunc, name, s::PlotSize; vscale=1, savepng=false)
+  # workaround for python not closing files properly
+  pygc.collect()
+
   # get the figure size and font size
   width = figsize[s][1]
   height = figsize[s][2] * vscale
