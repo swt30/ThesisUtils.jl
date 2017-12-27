@@ -44,7 +44,7 @@ const figsize = let
     base_aspect = [1, 1/aspectratio[s]]
     dpi_scaled = base_aspect * dpi_print
     width_scaled = dpi_scaled * width_in[s]
-    whole_numbers = round(Int, width_scaled)
+    whole_numbers = round.(Int, width_scaled)
   end
 
   Dict(zip(plotsizes, pixelsizes))
@@ -129,7 +129,7 @@ function placeholder()
     title="Placeholder plot")
 end
 
-typealias PlotType Union{Plots.Plot, Plots.Subplot}
+const PlotType = Union{Plots.Plot, Plots.Subplot}
 
 "Annotate a plot with a colored label"
 function annotate_color!(x, y, text, color;
