@@ -5,6 +5,7 @@ import PlotUtils
 import ColorTypes
 import PyCall
   PyCall.@pyimport gc as pygc
+import PyPlot
 
 export Margin, Normal, Full
 export autofig, placeholder, annotate_color!, seqcolors,
@@ -68,6 +69,9 @@ const caption_font_opts = Dict(
   :legendfont => font[Margin],
   :guidefont => font[Margin],
   :titlefont => font[Margin] )
+PyPlot.rc("mathtext", fontset = "custom", rm = fontstyle,
+          it = "$fontstyle:italic", bf = "$fontstyle:bold",
+          sf = fontstyle)
 
 # Plot appearance
 const plotopts = Dict(
