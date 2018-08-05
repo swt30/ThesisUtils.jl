@@ -25,7 +25,7 @@ Full
 # DPI settings
 const dpi_default = 100
 const dpi_print = 300
-const dpi_scale = 170
+const scale = dpi_print/dpi_default
 
 "Default plot aspect ratios"
 const aspectratio = Dict(
@@ -42,10 +42,9 @@ const width_in = Dict(
 "Sizes of figures in pixels"
 const figsize = let
   pixelsizes = map(plotsizes) do s
-    base_aspect = [1, 1/aspectratio[s]]
-    dpi_scaled = base_aspect * dpi_print
-    width_scaled = dpi_scaled * width_in[s]
-    whole_numbers = round.(Int, width_scaled)
+    plotsize_in = (1, 1/aspectratio[s]) .* width_in[s]
+    pixels_scaled = plotsize_in .* dpi_print
+    whole_numbers = round.(Int, pixels_scaled)
   end
 
   Dict(zip(plotsizes, pixelsizes))
@@ -57,7 +56,7 @@ const fontstyle = "fbb"
 const fontsize = Dict(
   Margin => 8,
   Normal => 10,
-  Full => 10 )
+  Full => 10)
 const font = Dict((s, Plots.font(fontstyle, fontsize[s])) for s in plotsizes)
 const main_font_opts = Dict(
   :tickfont => font[Normal],
@@ -76,8 +75,8 @@ PyPlot.rc("mathtext", fontset = "custom", rm = fontstyle,
 # Plot appearance
 const plotopts = Dict(
   :linewidth => 1.5,
-  :grid => false,
-  :dpi => dpi_scale )
+  :thickness_scaling => scale,
+  :grid => true)
 Plots.pyplot(;plotopts...)
 
 # Folder to save generated figures to
@@ -109,20 +108,20 @@ function autofig(plotfunc, name, s::PlotSize; vscale=1, savepng=false)
     name *= "_big_fig"
   end
 
+  Plots.default(size = (width, height))
+
   # plot the figure and save it to file
-  Plots.with(size=(width,height)) do
-    p = plotfunc()
-    figpath = joinpath(figdir, name)
-    if savepng
-      Plots.png(figpath)
-    else
-      Plots.svg(figpath)
-      # bit of a workaround because the font doesn't embed
-      run(`rsvg-convert -f pdf -o $figpath.pdf $figpath.svg`)
-      rm("$figpath.svg")
-    end
-    p
+  p = plotfunc()
+  figpath = joinpath(figdir, name)
+  if savepng
+    Plots.png(figpath)
+  else
+    Plots.svg(figpath)
+    # bit of a workaround because the font doesn't embed
+    run(`rsvg-convert -f pdf -o $figpath.pdf $figpath.svg`)
+    rm("$figpath.svg")
   end
+  p
 end
 
 "Make a default plot"
@@ -130,7 +129,8 @@ function placeholder()
   Plots.plot([sin, cos], linspace(0, 2π), labels=["sin(x)" "cos(x)"],
     xlabel="This is the x-axis",
     ylabel="This is the y-axis",
-    title="Placeholder plot")
+    title="Placeholder plot",
+    framestyle=:grid)
 end
 
 const PlotType = Union{Plots.Plot, Plots.Subplot}
